@@ -6,8 +6,8 @@
 //   - Antonio Vila Leis
 
 ///////////////////////////////// Definitions
-const int TURN_ANGLE = 25;
-const int CORNER_ANGLE = 85;
+const int TURN_ANGLE = 30;
+const int CORNER_ANGLE = 90;
 const int MIN_DISTANCE = 20;
 
 // Forward
@@ -30,7 +30,7 @@ void left(int degrees) {
     while (getGyroDegrees(S2) > -degrees) {
 			  setMotorSpeed(motorB, -30);
 		    setMotorSpeed(motorC, 30);
-		    writeDebugStreamLine("%d", getGyroDegrees(S2));
+		    //writeDebugStreamLine("%d", getGyroDegrees(S2));
 		}
 		return;
 }
@@ -50,6 +50,9 @@ void check_wall() {
 		int prev_distance = 0;
     int distance = 0;
 
+    distance = getUSDistance(S4);
+    prev_distance = distance;
+
 		resetGyro(S2);
 		clearTimer(T1);
 		while (getGyroDegrees(S2) > -90) {
@@ -62,13 +65,15 @@ void check_wall() {
 						sleep(time1[T1]);
 		        setMotorSpeed(motorB, 0);
     				setMotorSpeed(motorC, 0);
-		        return;
+    				writeDebugStreamLine("Left check");
+		        break;
 		    } else {
 		        prev_distance = distance;
 		    }
 		}
 
-		prev_distance = 0;
+		distance = getUSDistance(S4);
+    prev_distance = distance;
 
 		resetGyro(S2);
 		clearTimer(T1);
@@ -82,11 +87,14 @@ void check_wall() {
 						sleep(time1[T1]);
 		        setMotorSpeed(motorB, 0);
     				setMotorSpeed(motorC, 0);
-		        return;
+    				writeDebugStreamLine("Right check");
+		        break;
 		    } else {
 		        prev_distance = distance;
 		    }
 		}
+
+		return;
 }
 
 // Stop
@@ -118,37 +126,31 @@ task main() {
 
         // Forward
         forward(100);
-
+				/*
         // Print only when distance value change
         if(prev_distance != distance) {
             writeDebugStreamLine("Distance: %d", distance);
       	}
+      	*/
         prev_distance = distance;
     }
 
     // Loop
     while(true) {
         check_wall();
-
-        // Giramos esquerda 90
         left(CORNER_ANGLE);
 
-        // Avanzamos
         clearTimer(T1);
         while (getUSDistance(S4) > MIN_DISTANCE) {
         		forward(50);
         		if(time1[T1] >= 2000) {
         				stop();
-        				sleep(1000);
         				right(CORNER_ANGLE);
         				check_wall();
         				left(CORNER_ANGLE);
         				clearTimer(T1);
         		}
       	}
-
-      	left(CORNER_ANGLE);
-      	stopAllTasks();
     }
 }
 ///////////////////////////////// End
