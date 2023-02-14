@@ -5,7 +5,11 @@
 //   - Oscar Alejandro Manteiga Seoane
 //   - Antonio Vila Leis
 
-///////////////////////////////// Function definition
+///////////////////////////////// Definitions
+const int TURN_ANGLE = 25;
+const int CORNER_ANGLE = 85;
+const int MIN_DISTANCE = 20;
+
 // Forward
 void forward(int speed) {
     setMotorSpeed(motorB, speed);
@@ -93,67 +97,58 @@ void stop() {
 }
 /////////////////////////////////
 
-///////////////////////////////// Variable definitions
-const int TURN_ANGLE = 25;
-const int CORNER_ANGLE = 85;
-const int MIN_DISTANCE = 20;
-/////////////////////////////////
-
 ///////////////////////////////// Main task
 task main() {
     // Variables
     int prev_distance = 0;
     int distance = 0;
-    int cnt = 0;
+
+    // Medir distancia a la pared izquierda
+    distance = getUSDistance(S4);
+
+    while(getUSDistance(S4) > MIN_DISTANCE) {
+	      distance = getUSDistance(S4);
+
+        // Led changes
+        if(getUSDistance(S4) < 30) {
+            setLEDColor(ledOrange); // If distance < 30 orange led
+        } else {
+            setLEDColor(ledGreen); // Else green led
+        }
+
+        // Forward
+        forward(100);
+
+        // Print only when distance value change
+        if(prev_distance != distance) {
+            writeDebugStreamLine("Distance: %d", distance);
+      	}
+        prev_distance = distance;
+    }
 
     // Loop
     while(true) {
-        // Medir distancia a la pared izquierda
-        distance = getUSDistance(S4);
-
-        if(cnt == 0) {
-            while(getUSDistance(S4) > MIN_DISTANCE) {
-        	      distance = getUSDistance(S4);
-
-                // Led changes
-                if(getUSDistance(S4) < 30) {
-                    setLEDColor(ledOrange); // If distance < 30 orange led
-                } else {
-                    setLEDColor(ledGreen); // Else green led
-                }
-
-                // Forward
-                forward(100);
-
-                // Print only when distance value change
-                if(prev_distance != distance) {
-                    writeDebugStreamLine("Distance: %d", distance);
-                }
-
-                prev_distance = distance;
-            }
-
-            cnt = cnt + 1;
-        }
-
         check_wall();
 
         // Giramos esquerda 90
         left(CORNER_ANGLE);
 
         // Avanzamos
-        if (getUSDistance(S4) > MIN_DISTANCE) {
+        clearTimer(T1);
+        while (getUSDistance(S4) > MIN_DISTANCE) {
         		forward(50);
-        		sleep(2000);
-      	} else {
-      			stopAllTasks();
+        		if(time1[T1] >= 2000) {
+        				stop();
+        				sleep(1000);
+        				right(CORNER_ANGLE);
+        				check_wall();
+        				left(CORNER_ANGLE);
+        				clearTimer(T1);
+        		}
       	}
 
-        stop();
-       	sleep(1000);
-
-        // Comprobamos a dereita
-        right(CORNER_ANGLE);
+      	left(CORNER_ANGLE);
+      	stopAllTasks();
     }
 }
 ///////////////////////////////// End
