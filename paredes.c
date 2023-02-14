@@ -41,6 +41,50 @@ void right(int degrees) {
 		return;
 }
 
+// Check wall
+void check_wall() {
+		int prev_distance = 0;
+    int distance = 0;
+
+		resetGyro(S2);
+		clearTimer(T1);
+		while (getGyroDegrees(S2) > -90) {
+		    distance = getUSDistance(S4);
+		    setMotorSpeed(motorB, -30);
+				setMotorSpeed(motorC, 30);
+		    if (prev_distance < distance) {
+		    		setMotorSpeed(motorB, 30);
+						setMotorSpeed(motorC, -30);
+						sleep(time1[T1]);
+		        setMotorSpeed(motorB, 0);
+    				setMotorSpeed(motorC, 0);
+		        return;
+		    } else {
+		        prev_distance = distance;
+		    }
+		}
+
+		prev_distance = 0;
+
+		resetGyro(S2);
+		clearTimer(T1);
+		while (getGyroDegrees(S2) < 90) {
+		    distance = getUSDistance(S4);
+		    setMotorSpeed(motorB, 30);
+				setMotorSpeed(motorC, -30);
+		    if (prev_distance < distance) {
+		    		setMotorSpeed(motorB, -30);
+						setMotorSpeed(motorC, 30);
+						sleep(time1[T1]);
+		        setMotorSpeed(motorB, 0);
+    				setMotorSpeed(motorC, 0);
+		        return;
+		    } else {
+		        prev_distance = distance;
+		    }
+		}
+}
+
 // Stop
 void stop() {
     setMotorSpeed(motorB, 0);
@@ -49,9 +93,9 @@ void stop() {
 }
 /////////////////////////////////
 
-///////////////////////////////// Constant definition
-const int TURN_ANGLE = 30;
-const int CORNER_ANGLE = 90;
+///////////////////////////////// Variable definitions
+const int TURN_ANGLE = 25;
+const int CORNER_ANGLE = 85;
 const int MIN_DISTANCE = 20;
 /////////////////////////////////
 
@@ -69,7 +113,7 @@ task main() {
 
         if(cnt == 0) {
             while(getUSDistance(S4) > MIN_DISTANCE) {
-        	    distance = getUSDistance(S4);
+        	      distance = getUSDistance(S4);
 
                 // Led changes
                 if(getUSDistance(S4) < 30) {
@@ -88,55 +132,28 @@ task main() {
 
                 prev_distance = distance;
             }
+
+            cnt = cnt + 1;
         }
 
-        // Comprobamos distancia a izquieda ata que aumenta
-        // Paramos
-        // Comprobamos distancia a dereita ata que aumenta
-        // Paramos
+        check_wall();
+
         // Giramos esquerda 90
+        left(CORNER_ANGLE);
 
-        resetGyro(S2);
-        while (getGyroDegrees(S2) > -90) {
-            distance = getUSDistance(S4);
-            setMotorSpeed(motorB, -30);
-            setMotorSpeed(motorC, 30);
-            if (prev_distance < distance) {
-                break;
-            } else {
-                prev_distance = distance;
-            }
-        }
+        // Avanzamos
+        if (getUSDistance(S4) > MIN_DISTANCE) {
+        		forward(50);
+        		sleep(2000);
+      	} else {
+      			stopAllTasks();
+      	}
 
-        // Deshacer recorrido
+        stop();
+       	sleep(1000);
 
-
-        /*
-        // Si la pared est� demasiado lejos, girar a la izquierda
-        if (distance > MIN_DISTANCE) {
-            right(TURN_ANGLE);
-            wait1Msec(500);
-        }
-        // Si la pared est� demasiado cerca, girar a la derecha
-        else if (distance < MIN_DISTANCE) {
-            left(TURN_ANGLE);
-            wait1Msec(500);
-        }
-        // Si la pared est� a la distancia adecuada, avanzar
-        else {
-            forward(50);
-        }
-
-        // Detectar esquinas
-        int front_distance = getUSDistance(S4);
-        if (front_distance < 30) {
-            right(CORNER_ANGLE);
-            wait1Msec(500);
-        }
-
-        // Actualizar distancia anterior
-        prev_distance = distance;
-        */
+        // Comprobamos a dereita
+        right(CORNER_ANGLE);
     }
 }
 ///////////////////////////////// End
