@@ -20,18 +20,12 @@ void reverse(int speed) {
     return;
 }
 
-// Speed
-int speed(int dist) {
-	  return (20 * pow(dist, 0.3) - 30);
-}
-
 // Stop
 void stop() {
     setMotorSpeed(motorB, 0);
     setMotorSpeed(motorC, 0);
     return;
 }
-
 /////////////////////////////////
 
 ///////////////////////////////// Main task
@@ -49,7 +43,7 @@ task main() {
         		int distance = getUSDistance(S4);
 
             // Forward
-            forward(speed(distance));
+            forward(distance);
 
             // Print only when distance value change
             if(prev_distance != distance) {
@@ -75,7 +69,7 @@ task main() {
         		distance = getUSDistance(S4);
 
             // Reverse
-            reverse(speed(distance));
+            reverse(distance);
 
              // Print only when distance value change
             if(prev_distance != distance) {
