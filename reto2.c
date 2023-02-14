@@ -1,61 +1,88 @@
 //#### RobotC File ####//
-// Robótica Q8 2022/2023
+// Robotica Q8 2022/2023
 // Title: Reto 2
 // Authors:
-//   - Óscar Alejandro Manteiga Seoane
+//   - O?scar Alejandro Manteiga Seoane
 //   - Antonio Vila Leis
 
-// Function definition
-void forward(speed) {
+///////////////////////////////// Function definition
+// Forward
+void forward(int speed) {
     setMotorSpeed(motorB, speed);
     setMotorSpeed(motorC, speed);
     return;
 }
 
-void reverse(speed) {
+// Reverse
+void reverse(int speed) {
     setMotorSpeed(motorB, -speed);
     setMotorSpeed(motorC, -speed);
     return;
 }
 
+// Stop
 void stop() {
     setMotorSpeed(motorB, 0);
     setMotorSpeed(motorC, 0);
     return;
 }
+/////////////////////////////////
 
-// Main task
+///////////////////////////////// Main task
 task main() {
+	  // Variables
+	  int prev_distance = 0;
+	  int distance = 0;
+
     // Loop
     while(true) {
         clearDebugStream();
 
         // While distance > 10, go forward
         while(getUSDistance(S4) > 10) {
-            // Forward
-            forward(SensorValue[S4]);
+        		int distance = getUSDistance(S4);
 
-            // Print SensorValue only if it change
-            if(getUSDistance(S4) != SensorValue[S4]) {
-                writeDebugStreamLine("Distance: %d", SensorValue[S4]);
+            // Forward
+            forward(distance);
+
+            // Print only when distance value change
+            if(prev_distance != distance) {
+            	  writeDebugStreamLine("Forward distance: %d", distance);
             }
+
+            // Update previous value
+            prev_distance = distance;
         }
 
-        // Stop and red led
+        // Stop
         stop();
 
-        // While distance > 10, go forward
-        while(getUSDistance(S4) > 20) {
-            // Reverse
-            reverse(SensorValue[S4]);
+        // Reset prev_distance
+        prev_distance = 0;
 
-            // Print SensorValue only if it change
-            if(getUSDistance(S4) != SensorValue[S4]) {
-                writeDebugStreamLine("Distance: %d", SensorValue[S4]);
+        // Print stop distance value
+        writeDebugStreamLine("Stop at: %d", SensorValue[S4]);
+        sleep(1000);
+
+        // While distance > 10, go forward
+        while(getUSDistance(S4) < 40) {
+        		distance = getUSDistance(S4);
+
+            // Reverse
+            reverse(distance);
+
+             // Print only when distance value change
+            if(prev_distance != distance) {
+                writeDebugStreamLine("Reverse distance: %d", distance);
             }
+
+            // Update previous value
+            prev_distance = distance;
         }
 
+        // Shut down
         stop();
         stopAllTasks();
     }
 }
+///////////////////////////////// End
