@@ -2,7 +2,7 @@
 // Robotica Q8 2022/2023
 // Title: Reto 1
 // Authors:
-//   - O?scar Alejandro Manteiga Seoane
+//   - Oscar Alejandro Manteiga Seoane
 //   - Antonio Vila Leis
 
 ///////////////////////////////// Function definition
