@@ -79,7 +79,7 @@ task main() {
                 }
 
                 // Forward
-                forward();
+                forward(100);
 
                 // Print only when distance value change
                 if(prev_distance != distance) {
