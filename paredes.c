@@ -60,33 +60,69 @@ task main() {
     // Variables
     int prev_distance = 0;
     int distance = 0;
+    int cnt = 0;
 
     // Loop
     while(true) {
         // Medir distancia a la pared izquierda
-    		left(CORNER_ANGLE);
         distance = getUSDistance(S4);
 
-        // Si no hay pared a la izquierda, girar a la izquierda
-        if (distance == 255) {
-            reverse(50);
-            wait1Msec(500);
-            setMotorSpeed(motorB, 0);
-            wait1Msec(1000);
-            left(TURN_ANGLE);
-            wait1Msec(500);
+        if(cnt == 0) {
+            while(getUSDistance(S4) > MIN_DISTANCE) {
+        	    distance = getUSDistance(S4);
+
+                // Led changes
+                if(getUSDistance(S4) < 30) {
+                    setLEDColor(ledOrange); // If distance < 30 orange led
+                } else {
+                    setLEDColor(ledGreen); // Else green led
+                }
+
+                // Forward
+                forward();
+
+                // Print only when distance value change
+                if(prev_distance != distance) {
+                    writeDebugStreamLine("Distance: %d", distance);
+                }
+
+                prev_distance = distance;
+            }
         }
-        // Si la pared está demasiado lejos, girar a la izquierda
-        else if (distance > MIN_DISTANCE) {
-            left(TURN_ANGLE);
-            wait1Msec(500);
+
+        // Comprobamos distancia a izquieda ata que aumenta
+        // Paramos
+        // Comprobamos distancia a dereita ata que aumenta
+        // Paramos
+        // Giramos esquerda 90
+
+        resetGyro(S2);
+        while (getGyroDegrees(S2) > -90) {
+            distance = getUSDistance(S4);
+            setMotorSpeed(motorB, -30);
+            setMotorSpeed(motorC, 30);
+            if (prev_distance < distance) {
+                break;
+            } else {
+                prev_distance = distance;
+            }
         }
-        // Si la pared está demasiado cerca, girar a la derecha
-        else if (distance < MIN_DISTANCE) {
+
+        // Deshacer recorrido
+
+
+        /*
+        // Si la pared estï¿½ demasiado lejos, girar a la izquierda
+        if (distance > MIN_DISTANCE) {
             right(TURN_ANGLE);
             wait1Msec(500);
         }
-        // Si la pared está a la distancia adecuada, avanzar
+        // Si la pared estï¿½ demasiado cerca, girar a la derecha
+        else if (distance < MIN_DISTANCE) {
+            left(TURN_ANGLE);
+            wait1Msec(500);
+        }
+        // Si la pared estï¿½ a la distancia adecuada, avanzar
         else {
             forward(50);
         }
@@ -100,10 +136,7 @@ task main() {
 
         // Actualizar distancia anterior
         prev_distance = distance;
+        */
     }
-
-    // Shut down
-    stop();
-    stopAllTasks();
 }
 ///////////////////////////////// End
