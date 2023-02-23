@@ -6,14 +6,15 @@
 //   - Antonio Vila Leis
 
 ///////////////////////////////// Definitions
-const int TURN_ANGLE = 30;
 const int CORNER_ANGLE = 90;
-const int MIN_DISTANCE = 20;
+const int ADJUST_ANGLE = 10;
+const int MAX_DISTANCE = 30;
+const int MIN_DISTANCE = 15;
 
 // Forward
 void forward(int speed) {
-    setMotorSpeed(motorB, speed);
-    setMotorSpeed(motorC, speed);
+	setMotorSpeed(motorB, speed);
+	setMotorSpeed(motorC, speed);
     return;
 }
 
@@ -26,75 +27,45 @@ void reverse(int speed) {
 
 // Turn left
 void left(int degrees) {
-	  resetGyro(S2);
+	resetGyro(S2);
     while (getGyroDegrees(S2) > -degrees) {
-			  setMotorSpeed(motorB, -30);
-		    setMotorSpeed(motorC, 30);
-		    //writeDebugStreamLine("%d", getGyroDegrees(S2));
-		}
-		return;
+		setMotorSpeed(motorB, -20);
+		setMotorSpeed(motorC, 20);
+	}
+	return;
 }
 
 // Turn right
 void right(int degrees) {
-	  resetGyro(S2);
+	resetGyro(S2);
     while (getGyroDegrees(S2) < degrees) {
-			  setMotorSpeed(motorB, 30);
-		    setMotorSpeed(motorC, -30);
-		}
-		return;
+		setMotorSpeed(motorB, 20);
+		setMotorSpeed(motorC, -20);
+	}
+	return;
 }
 
-// Check wall
-void check_wall() {
-		int prev_distance = 0;
-    int distance = 0;
+void perpendicular() {
+	// Check if the robot is perpendicular to the detected wall in front
+	// If it is no, position it perpendicular to the wall
+}
 
-    distance = getUSDistance(S4);
-    prev_distance = distance;
+// Check right wall
+bool check_wall() {
+	int distance = 0;
 
-		resetGyro(S2);
-		clearTimer(T1);
-		while (getGyroDegrees(S2) > -90) {
-		    distance = getUSDistance(S4);
-		    setMotorSpeed(motorB, -30);
-				setMotorSpeed(motorC, 30);
-		    if (prev_distance < distance) {
-		    		setMotorSpeed(motorB, 30);
-						setMotorSpeed(motorC, -30);
-						sleep(time1[T1]);
-		        setMotorSpeed(motorB, 0);
-    				setMotorSpeed(motorC, 0);
-    				writeDebugStreamLine("Left check");
-		        break;
-		    } else {
-		        prev_distance = distance;
-		    }
+	right(CORNER_ANGLE);
+	distance = getUSDistance(S4);
+	if(distance < MAX_DISTANCE) {
+		if(distance <= MIN_DISTANCE) {
+			reverse(50);
+			sleep(500);
 		}
-
-		distance = getUSDistance(S4);
-    prev_distance = distance;
-
-		resetGyro(S2);
-		clearTimer(T1);
-		while (getGyroDegrees(S2) < 90) {
-		    distance = getUSDistance(S4);
-		    setMotorSpeed(motorB, 30);
-				setMotorSpeed(motorC, -30);
-		    if (prev_distance < distance) {
-		    		setMotorSpeed(motorB, -30);
-						setMotorSpeed(motorC, 30);
-						sleep(time1[T1]);
-		        setMotorSpeed(motorB, 0);
-    				setMotorSpeed(motorC, 0);
-    				writeDebugStreamLine("Right check");
-		        break;
-		    } else {
-		        prev_distance = distance;
-		    }
-		}
-
-		return;
+		return true;
+	}
+	else {
+		return false;
+	}
 }
 
 // Stop
@@ -107,50 +78,34 @@ void stop() {
 
 ///////////////////////////////// Main task
 task main() {
-    // Variables
-    int prev_distance = 0;
-    int distance = 0;
+	clearDebugStream();
+	bool right_wall = false;
+	bool front_wall = false;
 
-    // Medir distancia a la pared izquierda
-    distance = getUSDistance(S4);
+	while(true) {
+		right_wall = check_wall();
+		perpendicular();
 
-    while(getUSDistance(S4) > MIN_DISTANCE) {
-	      distance = getUSDistance(S4);
-
-        // Led changes
-        if(getUSDistance(S4) < 30) {
-            setLEDColor(ledOrange); // If distance < 30 orange led
-        } else {
-            setLEDColor(ledGreen); // Else green led
-        }
-
-        // Forward
-        forward(100);
-				/*
-        // Print only when distance value change
-        if(prev_distance != distance) {
-            writeDebugStreamLine("Distance: %d", distance);
-      	}
-      	*/
-        prev_distance = distance;
-    }
-
-    // Loop
-    while(true) {
-        check_wall();
-        left(CORNER_ANGLE);
-
-        clearTimer(T1);
-        while (getUSDistance(S4) > MIN_DISTANCE) {
-        		forward(50);
-        		if(time1[T1] >= 2000) {
-        				stop();
-        				right(CORNER_ANGLE);
-        				check_wall();
-        				left(CORNER_ANGLE);
-        				clearTimer(T1);
-        		}
-      	}
-    }
+		if(right_wall) {
+			left(CORNER_ANGLE-5);
+			clearTimer(T1);
+			while(time1[T1] < 1000) {
+				forward(50);
+				if(getUSDistance(S4) <= MIN_DISTANCE) {
+					left(CORNER_ANGLE);
+					break;
+				}
+			}
+		} else {
+			front_wall = false;
+			while(front_wall == false) {
+				forward(50);
+				if(getUSDistance(S4) < (MAX_DISTANCE+MIN_DISTANCE)/2) {
+					front_wall = true;
+					left(CORNER_ANGLE);
+				}
+			}
+		}
+	}
 }
 ///////////////////////////////// End
