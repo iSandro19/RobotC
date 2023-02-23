@@ -56,8 +56,6 @@ void right(int degrees) {
 
 // Perpendicular
 void perpendicular() {
-	// If robot is perpendicular, then its distance is smaller than small left turn distance and small right turn distante
-	// If it is not perpendicular, move to the position
 	int front_distance = 0;
 	int left_distante = 0;
 	int right_distante = 0;
@@ -78,21 +76,39 @@ void perpendicular() {
 	writeDebugStreamLine("Right: %d", right_distante);
 	left(ADJUST_ANGLE);
 
+	// If one wall is too far
+	if(front_distance > MAX_DISTANCE ||
+	   left_distante > MAX_DISTANCE ||
+	   right_distante > MAX_DISTANCE) {
+		writeDebugStreamLine("Oh, something wrong with the walls");
+		stopAllTasks();
+	}
+
+	// If robot is perpendicular, do nothing
 	if(front_distance == left_distante &&
 	   front_distance == right_distante) {
 		writeDebugStreamLine("It is perpendicular");
 		return;
 	}
 
-	// If robot is not perpendicular, move to the position
+	// If left_distance < front_distance, move a little to the left
 	if(left_distante < front_distance) {
 		writeDebugStreamLine("Adjust a little bit to the left");
 		left(ADJUST_ANGLE);
-	} else if (right_distante < front_distance){
+		return;
+	} else if(right_distante < front_distance) {
 		writeDebugStreamLine("Adjust a little bit to the right");
 		right(ADJUST_ANGLE);
+		return;
+	/*
+	} else if (right_distante > front_distance && right_distante > left_distante) {
+		writeDebugStreamLine("Adjust a little bit to the left");
+		left(ADJUST_ANGLE);
+	} else if (left_distante > front_distance && left_distante > right_distante) {
+		writeDebugStreamLine("Adjust a little bit to the right");
+		left(ADJUST_ANGLE);
+	*/
 	}
-
 	return;
 }
 
@@ -104,6 +120,7 @@ bool check_wall() {
 	distance = getUSDistance(S4);
 	if(distance < MAX_DISTANCE) {
 		if(distance <= MIN_DISTANCE) {
+			writeDebugStreamLine("Oh, too close to the wall, reverse a little");
 			reverse(50);
 			sleep(500);
 		}
