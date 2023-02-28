@@ -1,6 +1,6 @@
 //#### RobotC File ####//
 // Robotica Q8 2022/2023
-// Title: Wall following
+// Title: Wall following	
 // Authors:
 //   - Oscar Alejandro Manteiga Seoane
 //   - Antonio Vila Leis
@@ -77,12 +77,21 @@ void perpendicular() {
 	left(ADJUST_ANGLE);
 
 	// If one wall is too far
+<<<<<<< HEAD
 	//if(front_distance > MAX_DISTANCE ||
 	//   left_distante > MAX_DISTANCE ||
 	//   right_distante > MAX_DISTANCE) {
 	//	writeDebugStreamLine("Oh, something wrong with the walls");
 	//	stopAllTasks();
 	//}
+=======
+	if(front_distance > MAX_DISTANCE ||
+	   left_distante > MAX_DISTANCE ||
+	   right_distante > MAX_DISTANCE) {
+		writeDebugStreamLine("Oh, something wrong with the walls");
+		stopAllTasks();
+	}
+>>>>>>> 82f30e2f5ec7ca703c59abe02a53a372799e6a4f
 
 	// If robot is perpendicular, do nothing
 	if(front_distance == left_distante &&
@@ -137,8 +146,11 @@ task main() {
 	clearDebugStream();
 	bool right_wall = false;
 	bool front_wall = false;
+<<<<<<< HEAD
 	
 	sleep(2000);
+=======
+>>>>>>> 82f30e2f5ec7ca703c59abe02a53a372799e6a4f
 
 	while(true) {
 		right_wall = check_wall();
@@ -148,7 +160,11 @@ task main() {
 			left(CORNER_ANGLE-4);
 			clearTimer(T1);
 			while(time1[T1] < 1000) {
+<<<<<<< HEAD
 				forward(70);
+=======
+				forward(50);
+>>>>>>> 82f30e2f5ec7ca703c59abe02a53a372799e6a4f
 				if(getUSDistance(S4) <= MIN_DISTANCE) {
 					left(CORNER_ANGLE);
 					break;
@@ -157,7 +173,11 @@ task main() {
 		} else {
 			front_wall = false;
 			while(front_wall == false) {
+<<<<<<< HEAD
 				forward(70);
+=======
+				forward(50);
+>>>>>>> 82f30e2f5ec7ca703c59abe02a53a372799e6a4f
 				if(getUSDistance(S4) < (MAX_DISTANCE+MIN_DISTANCE)/2) {
 					front_wall = true;
 					left(CORNER_ANGLE);
