@@ -35,7 +35,7 @@ void turnLeft(){
 
  repeatUntil(getGyroDegrees(gyro) > 90)
 {
-   writeDebugStream("giro: %d\n", getGyroDegrees(gyro));
+   //writeDebugStream("giro: %d\n", getGyroDegrees(gyro));
   //Point turn to the left
   setMotorSpeed(motorC, -30);
   setMotorSpeed(motorB, 30);
@@ -69,7 +69,7 @@ void turnRight(){
 
  repeatUntil(getGyroDegrees(gyro) < -90)
  {
-   writeDebugStream("giro: %d\n", getGyroDegrees(gyro));
+   //writeDebugStream("giro: %d\n", getGyroDegrees(gyro));
   //Point turn to the left
   setMotorSpeed(motorC, 30);
   setMotorSpeed(motorB, -30);
@@ -108,7 +108,7 @@ void lock(int priority){
 }
 
 task escape() {
-	// Read the sensor
+	writeDebugStream("Escape\n");
 	currentDistance = SensorValue[Sonar];
 
 	if ((currentDistance < distToEscape) || SensorValue[Touch]) {
@@ -132,7 +132,7 @@ task escape() {
 }
 
 task chase_light() {
-	//Read the sensor
+	writeDebugStream("Chase_Light\n");
 	currentColor = getColorAmbient(colorSensor);
 	//writeDebugStream("currentColor: %d initialColorAmbient %d\n", currentColor, initialColorAmbient);
 	//int currentColor = 0;
@@ -155,6 +155,7 @@ task chase_light() {
 }
 
 task follow_walls() {
+	writeDebugStream("Follow_Walls\n");
 	int currentDist = SensorValue[Sonar];
 	int error = 0;
 	int derivative = 0;
@@ -202,6 +203,7 @@ task follow_walls() {
 }
 
 task approach_walls() {
+	writeDebugStream("Approach_Walls\n");
 	currentDistance = SensorValue[Sonar];
 	//writeDebugStream("distancia: %d\n", currentDistance);
 	if (currentDistance > distToApproach) {
@@ -242,7 +244,7 @@ task main()
 
 	while(true){
 		startTask(escape);
-		startTask(chase_light);
+		//startTask(chase_light);
 		startTask(follow_walls);
 		startTask(approach_walls);
 		//wait1Msec(250);
