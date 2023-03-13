@@ -3,20 +3,22 @@
 // Title: Practice 1
 // Authors:
 //   - Oscar Alejandro Manteiga Seoane
-//   - Antonio Vila Leis
+//   - Antonio Vila Lei
 
 // Definitions ################################################################
 const int CORNER_ANGLE = 90;
-const int ADJUST_ANGLE = 15;
+const int ADJUST_ANGLE = 5;
 const int MAX_DISTANCE = 30;
-const int MIN_DISTANCE = 15;
+const int MIN_DISTANCE = 5;
 
 bool right_wall = false;
 bool front_wall = false;
 int currentDistance = 0;
 
 // Semaphores #################################################################
-TSemaphore semaphore;
+TSemaphore semaphore12;
+TSemaphore semaphore23;
+TSemaphore semaphore34;
 
 // Functions ##################################################################
 void stop() {
@@ -38,7 +40,7 @@ void reverse(int speed) {
 }
 
 void left(int degrees) {
-    while(getGyroDegrees(S2) > -degrees) {
+    repeatUntil(getGyroDegrees(S2) > -degrees) {
 		setMotorSpeed(motorB, -20);
 		setMotorSpeed(motorC, 20);
 	}
@@ -47,7 +49,7 @@ void left(int degrees) {
 }
 
 void right(int degrees) {
-    while(getGyroDegrees(S2) < degrees) {
+    repeatUntil(getGyroDegrees(S2) < degrees) {
 		setMotorSpeed(motorB, 20);
 		setMotorSpeed(motorC, -20);
 	}
@@ -55,8 +57,25 @@ void right(int degrees) {
 	return;
 }
 
+bool check_wall() {
+	int distance = 0;
+
+	right(CORNER_ANGLE);
+	distance = getUSDistance(S4);
+	if(distance < MAX_DISTANCE) {
+		if(distance <= MIN_DISTANCE) {
+			writeDebugStreamLine("Oh, too close to the wall, reverse a little");
+			reverse(50);
+			sleep(500);
+		}
+		return true;
+	}
+	else {
+		return false;
+	}
+}
+
 void perpendicular() {
-	writeDebugStreamLine("Perpendicular");
 	int front_distance = 0;
 	int left_distante = 0;
 	int right_distante = 0;
@@ -97,151 +116,156 @@ void perpendicular() {
 	return;
 }
 
-bool check_wall() {
-	int distance = 0;
-
-	right(CORNER_ANGLE);
-	writeDebugStreamLine("Checking wall");
-	distance = getUSDistance(S4);
-	if(distance < MAX_DISTANCE) {
-		if(distance <= MIN_DISTANCE) {
-			writeDebugStreamLine("Oh, too close to the wall, reverse a little");
-			reverse(50);
-			sleep(500);
-		}
-		return true;
-	}
-	else {
-		return false;
-	}
-}
 
 // Tasks ######################################################################
-/*
 task escape() {
-	writeDebugStreamLine("Escape task\n");
-    // Comprobar si la tarea está activa (no está inhibida por otra).
-    // Aviso: proteger acceso concurrente a variable/s.
+    while(true) {
+		int currentDistance = getUSDistance(S4);
 
-    // SI no está inhibida:
-        // Leer SENSORIZACI�?N necesaria para determinar si la tarea tiene que
-        // hacer algo según el estado del entorno.
-
-        // SI tiene que actuar:
-            // Inhibir tareas niveles inferiores.
-            // Actuar.
-        // SINO
-            // Desinhibir tareas niveles inferiores.
-
-    // SINO
-        // Inhibir tareas inferiores.
+		if(currentDistance < MIN_DISTANCE) {
+			semaphoreLock(semaphore12);
+			if(bDoesTaskOwnSemaphore(semaphore12)) {
+				writeDebugStreamLine("ESCAPE\n");
+				reverse(50);
+				sleep(500);
+				resetGyro(S2);
+				left(CORNER_ANGLE);
+				resetGyro(S2);
+				semaphoreUnlock(semaphore12);
+			}
+		}
+	}
 }
 
 task light() {
-	writeDebugStreamLine("Light task\n");
-    // Comprobar si la tarea está activa (no está inhibida por otra).
-    // Aviso: proteger acceso concurrente a variable/s.
+	int luz, luzUmbral;
+	luzUmbral = getColorAmbient(S3)*1.4;
 
-    // SI no está inhibida:
-        // Leer SENSORIZACI�?N necesaria para determinar si la tarea tiene que
-        // hacer algo según el estado del entorno.
+	while(true) {
+		luz = getColorAmbient(S3);
 
-        // SI tiene que actuar:
-            // Inhibir tareas niveles inferiores.
-            // Actuar.
-        // SINO
-            // Desinhibir tareas niveles inferiores.
+		semaphoreLock(semaphore12);
+		if(bDoesTaskOwnSemaphore(semaphore12)) {
+			writeDebugStreamLine("LIGHT\n");
 
-    // SINO
-        // Inhibir tareas inferiores.
-}
-*/
-task follow_wall() {
-	writeDebugStreamLine("FOLLOW WALL\n");
-	right(CORNER_ANGLE);
-	writeDebugStreamLine("    - Checking wall");
-	currentDistance = getUSDistance(S4);
-	if(currentDistance < MAX_DISTANCE) {
-		writeDebugStreamLine("    - Xo ya no sè");
-		if(currentDistance <= MIN_DISTANCE) {
-			writeDebugStreamLine("Vai pa' tras que chocamos");
-			reverse(50);
-			sleep(500);
-		}
-		if(bDoesTaskOwnSemaphore(semaphore)) {
-			if(right_wall) {
-				writeDebugStreamLine("    - Pared derecha detectada");
-				left(CORNER_ANGLE-4);
-				clearTimer(T1);
-				while(time1[T1] < 1000) {
-					forward(70);
-					if(getUSDistance(S4) <= MIN_DISTANCE) {
-						left(CORNER_ANGLE);
-						break;
-					}
+			if(bDoesTaskOwnSemaphore(semaphore23)) {
+				semaphoreUnlock(semaphore23);
+			}
+
+			if(luz > luzUmbral) {
+				semaphoreLock(semaphore23);
+				setMotorSpeed(motorB, 30);
+				setMotorSpeed(motorC, 0);
+				while(luz <= getColorAmbient(S3)) {
+					luz = getColorAmbient(S3);
 				}
-			} else {
-				writeDebugStreamLine("    - No se encuentra ninguna pared");
-				semaphoreUnlock(semaphore);
+				setMotorSpeed(motorB, 0);
+				setMotorSpeed(motorC, 30);
+				while(luz <= getColorAmbient(S3)) {
+					luz = getColorAmbient(S3);
+				}
+				semaphoreUnlock(semaphore23);
+			}
+			semaphoreUnlock(semaphore12);
+		} else {
+			if(!bDoesTaskOwnSemaphore(semaphore23)) {
+				semaphoreLock(semaphore23);
 			}
 		}
-	} else {
-		writeDebugStreamLine("    - Ta mu lejos");
-		if(!bDoesTaskOwnSemaphore(semaphore)) {
-			semaphoreLock(semaphore);
+	}
+}
+
+task follow_wall() {
+	bool right_wall = false;
+
+	while(true) {
+		int currentDistance = getUSDistance(S4);
+
+		semaphoreLock(semaphore23);
+		if(bDoesTaskOwnSemaphore(semaphore23)) {
+			writeDebugStreamLine("FOLLOW WALL\n");
+
+			if(bDoesTaskOwnSemaphore(semaphore34)) {
+				semaphoreUnlock(semaphore34);
+			}
+
+			if(currentDistance < MAX_DISTANCE) {
+				semaphoreLock(semaphore34);
+				right_wall = check_wall();
+
+				resetGyro(S2);
+				repeatUntil(getGyroDegrees(S2) >= 135) {
+					setMotorSpeed(motorB, 25);
+					setMotorSpeed(motorC, -25);
+				}
+				resetGyro(S2);
+
+				semaphoreUnlock(semaphore34);
+			}
+
+			if(currentDistance >= MAX_DISTANCE && right_wall) {
+				semaphoreLock(semaphore34);
+				resetGyro(S2);
+				repeatUntil(getGyroDegrees(S2) <= -5) {
+					setMotorSpeed(motorB, 40);
+					setMotorSpeed(motorC, 60);
+				}
+				resetGyro(S2);
+				semaphoreUnlock(semaphore34);
+			}
+			semaphoreUnlock(semaphore23);
+		} else {
+			if(!bDoesTaskOwnSemaphore(semaphore34)) {
+				semaphoreLock(semaphore34);
+			}
 		}
 	}
 }
 
 task go_to_wall() {
-	writeDebugStreamLine("GO TO WALL\n");
-	currentDistance = getUSDistance(S4);
+	while(true){
+		int currentDistance = getUSDistance(S4);
 
-	if(currentDistance > MAX_DISTANCE) {
-		writeDebugStreamLine("    - Ta mu lejos");
-		if(!bDoesTaskOwnSemaphore(semaphore)) {
-			semaphoreLock(semaphore);
-		}
-	}
-
-	if(bDoesTaskOwnSemaphore(semaphore)) {
-		writeDebugStreamLine("    - Checking wall");
-		if(currentDistance <= (MAX_DISTANCE+MIN_DISTANCE)/2) {
-			front_wall = true;
-		} else {
-			front_wall = false;
-		}
-
-		if(front_wall == false) {
-			writeDebugStreamLine("    - Pared frontal detectada");
-			forward(70);
-			if(getUSDistance(S4) < (MAX_DISTANCE+MIN_DISTANCE)/2) {
-				front_wall = true;
-				left(CORNER_ANGLE);
+		semaphoreLock(semaphore34);
+		if(bDoesTaskOwnSemaphore(semaphore34)) {
+			writeDebugStreamLine("GO TO WALL\n");
+			if (currentDistance > MAX_DISTANCE) {
+				forward(100);
+			} else {
+				forward(currentDistance);
 			}
-		} else {
-			writeDebugStreamLine("    - No se encuentra ninguna pared");
-			semaphoreUnlock(semaphore);
+			semaphoreUnlock(semaphore34);
 		}
 	}
 }
 
 // Main #######################################################################
 task main() {
-    // Clear debug stream window
+    // Clear debug stream window and wait 1s
     clearDebugStream();
-    sleep(1000);
-    semaphoreInitialize(semaphore);
-	resetGyro(S2);
+    sleep(500);
+
+	int luz, luzUmbral;
+	luz = getColorAmbient(S3);
+	sleep(500);
+	luzUmbral = luz*1.8;
+
+	// Initialize semaphores
+    semaphoreInitialize(semaphore12);
+	semaphoreInitialize(semaphore23);
+	semaphoreInitialize(semaphore34);
+
+	// Initialize tasks
+	startTask(escape);
+	startTask(light);
+	startTask(follow_wall);
+	startTask(go_to_wall);
 
     // Bucle inicial
     while(true) {
-		writeDebugStreamLine("START");
-		//startTask(escape);
-		//startTask(light);
-		startTask(follow_wall);
-		startTask(go_to_wall);
-
-		abortTimeslice();
+		luz = getColorName(S3);
+		if(luz > luzUmbral*1.6) {
+			stopAllTasks();
+		}
     }
 }
