@@ -97,9 +97,9 @@ task follow_wall() {
 				semaphoreLock(semaphore34); //Seguir pared
 					pared = true;
 					resetGyro(S2);
-					repeatUntil(getGyroDegrees(S2) >= 110) {
-						setMotorSpeed(motorB, 25);
-						setMotorSpeed(motorC, -25);
+					repeatUntil(getGyroDegrees(S2) <= -110) {
+						setMotorSpeed(motorB, -25);
+						setMotorSpeed(motorC, 25);
 					}
 					resetGyro(S2);
 				semaphoreUnlock(semaphore34); //Dejar seguir pared
@@ -108,9 +108,9 @@ task follow_wall() {
 			if(currentDistance > 25 && pared) {
 				semaphoreLock(semaphore34); //Seguir pared
 					resetGyro(S2);
-					repeatUntil(getGyroDegrees(S2) <= -5) {
-						setMotorSpeed(motorB, 30);
-						setMotorSpeed(motorC, 60);
+					repeatUntil(getGyroDegrees(S2) >= 5) {
+						setMotorSpeed(motorB, 60);
+						setMotorSpeed(motorC, 30);
 					}
 					resetGyro(S2);
 				semaphoreUnlock(semaphore34); //Dejar seguir pared
