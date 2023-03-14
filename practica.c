@@ -5,173 +5,212 @@
 //   - Oscar Alejandro Manteiga Seoane
 //   - Antonio Vila Lei
 
+// Pragma #####################################################################
+#pragma config(Sensor, S1,     touchSensor,    sensorEV3_Touch)
+#pragma config(Sensor, S2,     gyroSensor,     sensorEV3_Gyro, modeEV3Gyro_RateAndAngle)
+#pragma config(Sensor, S3,     lightSensor,    sensorEV3_Color, modeEV3Color_Ambient)
+#pragma config(Sensor, S4,     sonarSensor,    sensorEV3_Ultrasonic)
+#pragma config(Motor,  motorA,          armMotor,      tmotorEV3_Large, PIDControl, encoder)
+#pragma config(Motor,  motorB,          leftMotor,     tmotorEV3_Large, PIDControl, driveLeft, encoder)
+#pragma config(Motor,  motorC,          rightMotor,    tmotorEV3_Large, PIDControl, driveRight, encoder)
+
 // Definitions ################################################################
 const int CORNER_ANGLE = 90;
-const int ADJUST_ANGLE = 5;
 const int MAX_DISTANCE = 30;
-const int MIN_DISTANCE = 5;
+const int MIN_DISTANCE = 15;
+const int TURN_DEGREE = 110;
+
+const int LIGHT_FOUND = 35;
+const int LIGHT_DETECTED = 15;
+const int LIGHT_LOST = 5;
+
+const int DEFEAULT_SPEED = 50;
+const int FULL_SPEED = 100;
 
 // Semaphores #################################################################
-TSemaphore semaphore12;
-TSemaphore semaphore23;
-TSemaphore semaphore34;
+TSemaphore sem_escape_light;
+TSemaphore sem_light_follow;
+TSemaphore sem_follow_go;
 
 // Tasks ######################################################################
+/*
+ * Escape task
+ * This task is in charge of escaping from crashes.
+ */
 task escape() {
     while(true) {
-		int currentDistance = getUSDistance(S4);
+		int currentDistance = getUSDistance(sonarSensor);
 
-		if(getTouchValue(S1) == 1 || currentDistance < MIN_DISTANCE) {
-			semaphoreLock(semaphore12);
-			if(bDoesTaskOwnSemaphore(semaphore12)) {
-				writeDebugStreamLine("ESCAPE\n");
-				setMotorSpeed(motorB, -50);
-				setMotorSpeed(motorC, -50);
+		if(getTouchValue(touchSensor) == 1 || currentDistance < MIN_DISTANCE) {
+			semaphoreLock(sem_escape_light);
+			if(bDoesTaskOwnSemaphore(sem_escape_light)) {
+				setMotorSpeed(leftMotor, -DEFEAULT_SPEED);
+				setMotorSpeed(rightMotor, -DEFEAULT_SPEED);
 				sleep(500);
-				resetGyro(S2);
-				repeatUntil(getGyroDegrees(S2) < -CORNER_ANGLE) {
-					setMotorSpeed(motorB, -30);
-					setMotorSpeed(motorC, 30);
+				resetGyro(gyroSensor);
+				repeatUntil(getGyroDegrees(gyroSensor) < -CORNER_ANGLE) {
+					setMotorSpeed(leftMotor, -DEFEAULT_SPEED);
+					setMotorSpeed(rightMotor, DEFEAULT_SPEED);
 				}
-				resetGyro(S2);
-				semaphoreUnlock(semaphore12);
+				resetGyro(gyroSensor);
+				semaphoreUnlock(sem_escape_light);
 			}
 		}
 	}
 }
 
+/*
+ * Light task
+ * This task is in charge of detecting the light.
+ */
 task light() {
-	int luz, luzUmbral;
-	luzUmbral = getColorAmbient(S3)*1.4;
+	int luz;
 
 	while(true) {
-		luz = getColorAmbient(S3);
+		luz = getColorAmbient(lightSensor);
 
-		semaphoreLock(semaphore12);
-		if(bDoesTaskOwnSemaphore(semaphore12)) {
+		semaphoreLock(sem_escape_light);
+		if(bDoesTaskOwnSemaphore(sem_escape_light)) {
 
-			if(bDoesTaskOwnSemaphore(semaphore23)) {
-				semaphoreUnlock(semaphore23);
+			if(bDoesTaskOwnSemaphore(sem_light_follow)) {
+				semaphoreUnlock(sem_light_follow);
 			}
 
-			if(luz > luzUmbral) {
-				semaphoreLock(semaphore23);
-				writeDebugStreamLine("LIGHT 2\n");
-				setMotorSpeed(motorB, 30);
-				setMotorSpeed(motorC, -30);
-				while(luz <= getColorAmbient(S3)) {
-					luz = getColorAmbient(S3);
+			if(luz >= LIGHT_DETECTED) {
+				semaphoreLock(sem_light_follow);
+				setMotorSpeed(leftMotor, DEFEAULT_SPEED);
+				setMotorSpeed(rightMotor, -DEFEAULT_SPEED);
+				while(luz <= getColorAmbient(lightSensor)) {
+					luz = getColorAmbient(lightSensor);
 				}
-				writeDebugStreamLine("LIGHT 3\n");
-				setMotorSpeed(motorB, -30);
-				setMotorSpeed(motorC, 30);
-				while(luz <= getColorAmbient(S3)) {
-					luz = getColorAmbient(S3);
+				setMotorSpeed(leftMotor, -DEFEAULT_SPEED);
+				setMotorSpeed(rightMotor, DEFEAULT_SPEED);
+				while(luz <= getColorAmbient(lightSensor)) {
+					luz = getColorAmbient(lightSensor);
 				}
-				semaphoreUnlock(semaphore23);
+				semaphoreUnlock(sem_light_follow);
 			}
-			semaphoreUnlock(semaphore12);
+
+			if(luz >= LIGHT_DETECTED) {
+				stopAllTasks();;
+			}
+
+			semaphoreUnlock(sem_escape_light);
 		} else {
-			if(!bDoesTaskOwnSemaphore(semaphore23)) {
-				semaphoreLock(semaphore23);
+			if(!bDoesTaskOwnSemaphore(sem_light_follow)) {
+				semaphoreLock(sem_light_follow);
 			}
 		}
 	}
 }
 
+/*
+ * Follow wall task
+ * This task is in charge of following the (right) wall.
+ */
 task follow_wall() {
-	bool pared = false;
-	
+	bool right_wall = false;
+
 	while(true) {
-		int currentDistance = getUSDistance(S4);
+		// Get current distance
+		int currentDistance = getUSDistance(sonarSensor);
 
-		semaphoreLock(semaphore23);
-		if (bDoesTaskOwnSemaphore(semaphore23)) { //Si no estamos sigiuiendo luz
-            writeDebugStreamLine("Seguir pared");
+		// Lock
+		semaphoreLock(sem_light_follow);
+		if (bDoesTaskOwnSemaphore(sem_light_follow)) {
 
-			if(bDoesTaskOwnSemaphore(semaphore34)) {
-				semaphoreUnlock(semaphore34);
-			} //Si siguiendo pared: dejar seguir
-
-			if (currentDistance < 25){
-				semaphoreLock(semaphore34); //Seguir pared
-					pared = true;
-					resetGyro(S2);
-					repeatUntil(getGyroDegrees(S2) <= -110) {
-						setMotorSpeed(motorB, -25);
-						setMotorSpeed(motorC, 25);
-					}
-					resetGyro(S2);
-				semaphoreUnlock(semaphore34); //Dejar seguir pared
+			// Unlock
+			if(bDoesTaskOwnSemaphore(sem_follow_go)) {
+				semaphoreUnlock(sem_follow_go);
 			}
 
-			if(currentDistance > 25 && pared) {
-				semaphoreLock(semaphore34); //Seguir pared
-					resetGyro(S2);
-					repeatUntil(getGyroDegrees(S2) >= 5) {
-						setMotorSpeed(motorB, 60);
-						setMotorSpeed(motorC, 30);
+			//
+			if (currentDistance < MAX_DISTANCE){
+				// Lock
+				semaphoreLock(sem_follow_go);
+					right_wall = true;
+					resetGyro(gyroSensor);
+					repeatUntil(getGyroDegrees(gyroSensor) <= -TURN_DEGREE) {
+						setMotorSpeed(leftMotor, -DEFEAULT_SPEED);
+						setMotorSpeed(rightMotor, DEFEAULT_SPEED);
 					}
-					resetGyro(S2);
-				semaphoreUnlock(semaphore34); //Dejar seguir pared
+					resetGyro(gyroSensor);
+
+				// Unlock
+				semaphoreUnlock(sem_follow_go);
 			}
-			semaphoreUnlock(semaphore23); //Dejar libre seguir luz
+
+			if(currentDistance > MAX_DISTANCE && right_wall) {
+				semaphoreLock(sem_follow_go);
+					resetGyro(gyroSensor);
+					repeatUntil(getGyroDegrees(gyroSensor) >= 5) {
+						setMotorSpeed(leftMotor, DEFEAULT_SPEED + 10);
+						setMotorSpeed(rightMotor, DEFEAULT_SPEED - 10);
+					}
+					resetGyro(gyroSensor);
+
+				// Unlock
+				semaphoreUnlock(sem_follow_go);
+			}
+
+			// Unlock
+			semaphoreUnlock(sem_light_follow);
 		} else {
-			if(!bDoesTaskOwnSemaphore(semaphore34)) {
-				semaphoreLock(semaphore34);
-			} //Si no siguiendo pared: seguir pared
+			// Lock
+			if(!bDoesTaskOwnSemaphore(sem_follow_go)) {
+				semaphoreLock(sem_follow_go);
+			}
 		}
 	}
 }
 
+/*
+ * Go to wall task
+ * This task is in charge of going to the (front) wall.
+ */
 task go_to_wall() {
 	while(true){
-		int currentDistance = getUSDistance(S4);
+		// Get current distance
+		int currentDistance = getUSDistance(sonarSensor);
 
-		semaphoreLock(semaphore34);
-		if(bDoesTaskOwnSemaphore(semaphore34)) {
+		// Lock
+		semaphoreLock(sem_follow_go);
+		if(bDoesTaskOwnSemaphore(sem_follow_go)) {
+			// 100 speed
 			if (currentDistance > MAX_DISTANCE) {
-				writeDebugStreamLine("GO TO WALL - 100\n");
-				setMotorSpeed(motorB, 100);
-				setMotorSpeed(motorC, 100);
+				setMotorSpeed(leftMotor, FULL_SPEED);
+				setMotorSpeed(rightMotor, FULL_SPEED);
+			
+			// Linear distance speed
 			} else {
-				writeDebugStreamLine("GO TO WALL - Distance\n");
-				setMotorSpeed(motorB, currentDistance);
-				setMotorSpeed(motorC, currentDistance);
+				setMotorSpeed(leftMotor, currentDistance + 20);
+				setMotorSpeed(rightMotor, currentDistance + 20);
 			}
-			semaphoreUnlock(semaphore34);
+
+			// Unlock
+			semaphoreUnlock(sem_follow_go);
 		}
 	}
 }
 
 // Main #######################################################################
 task main() {
-    // Clear debug stream window and wait 1s
+	// Clear debug stream window and short sleep
     clearDebugStream();
-	setMotorSpeed(motorA, 100);
     sleep(500);
 
-	int luz, luzUmbral;
-	luz = getColorAmbient(S3);
-	sleep(500);
-	luzUmbral = luz*1.8;
+	// Set arm motor up
+	setMotorSpeed(armMotor, FULL_SPEED);
+	sleep(100);
 
 	// Initialize semaphores
-    semaphoreInitialize(semaphore12);
-	semaphoreInitialize(semaphore23);
-	semaphoreInitialize(semaphore34);
+    semaphoreInitialize(sem_escape_light);
+	semaphoreInitialize(sem_light_follow);
+	semaphoreInitialize(sem_follow_go);
 
-	// Initialize tasks
+	// Start tasks
 	startTask(escape);
 	startTask(light);
 	startTask(follow_wall);
 	startTask(go_to_wall);
-
-    // Bucle inicial
-    while(true) {
-		luz = getColorName(S3);
-		if(luz > luzUmbral*1.6) {
-			stopAllTasks();
-		}
-    }
 }
