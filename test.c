@@ -2,25 +2,19 @@
 
 ///// VARIABLES GLOBALES
 int distUmbral = 50; //Distancia minima del sensor de ultrasonidos
-int robotSpeed = 90; //Velocdidad del robot
+int robotSpeed = 60; //Velocdidad del robot
 TSemaphore sem12, sem23, sem34;
 
 /*
 Se acerca a una pared y cuando está cerca reduce la velcidad de forma progresiva
 */
 task acercarsePared(){
-	setLEDColor(ledGreenFlash);
 	while(true){
 		int d = getUSDistance(sonarSensor);
 		semaphoreLock(sem34); //Si no estamos haciendo ninguna de las otras tasks
 		if(bDoesTaskOwnSemaphore(sem34)){
-            writeDebugStreamLine("Pared");
 			if (d > distUmbral) {
-				if (getUSDistance(sonarSensor) <= 2*distUmbral){
-					setLEDColor(ledOrangeFlash);
-				} else {
-				setLEDColor(ledGreenFlash);
-				}
+				setLEDColor(ledOrange);
 					setMotorSpeed(leftMotor, robotSpeed);
 					setMotorSpeed(rightMotor, robotSpeed);
 			}	else {
@@ -34,16 +28,15 @@ task acercarsePared(){
 
 task acercarseLuz(){
 	int luzUmbral, luz;
-	luzUmbral = getColorAmbient(colorSensor)*1.4;
+	luzUmbral = getColorAmbient(colorSensor)*1.5;
 	while(true){
 		luz = getColorAmbient(colorSensor);
 		semaphoreLock(sem12);
 		if (bDoesTaskOwnSemaphore(sem12)){ //Si no se está escapando
-            writeDebugStreamLine("Luz");
-			setLEDColor(ledOrange);
 			if(bDoesTaskOwnSemaphore(sem23)) {semaphoreUnlock(sem23);} //Si siguiendo luz: no seguir
 			if(luz > luzUmbral){
 				semaphoreLock(sem23); //Seguir luz
+				setLEDColor(ledOff);
 				setMotorSpeed(leftMotor, 30);
 				setMotorSpeed(rightMotor, 0);
 				while (luz <= getColorAmbient(colorSensor)){
@@ -72,7 +65,6 @@ task escapar(){
 		if((getTouchValue(touchSensor)==1) || (dist<5)){
 			semaphoreLock(sem12); //Estamos escapando
 			if(bDoesTaskOwnSemaphore(sem12)){
-                writeDebugStreamLine("Escapando");
 				setLEDColor(ledRed); //led rojo
 				setMotorSpeed(leftMotor, -20);
 				setMotorSpeed(rightMotor, -20);
@@ -93,12 +85,11 @@ task escapar(){
 
 task seguirPared(){
 	bool pared = false;
-	while(true) {
+	while(true){
 		int dist = getUSDistance(sonarSensor);
 
 		semaphoreLock(sem23);
 		if (bDoesTaskOwnSemaphore(sem23)){ //Si no estamos sigiuiendo luz
-            writeDebugStreamLine("Seguir pared");
 			setLEDColor(ledGreen);
 
 			if(bDoesTaskOwnSemaphore(sem34)){ semaphoreUnlock(sem34);} //Si siguiendo pared: dejar seguir
@@ -134,12 +125,12 @@ task seguirPared(){
 	}
 }
 
-task main() {
+task main()
+{
 	int luz, luzUmbral;
-	luz = getColorAmbient(colorSensor);
+	luz=getColorAmbient(colorSensor);
 	sleep(1000);
-	luzUmbral=getColorAmbient(colorSensor)*1.8;
-
+	luzUmbral=getColorAmbient(colorSensor)* 3.4;
 	semaphoreInitialize(sem12);
 	semaphoreInitialize(sem23);
 	semaphoreInitialize(sem34);
@@ -150,8 +141,9 @@ task main() {
 	startTask(escapar);
 
 	while(true){
-		luz = getColorName(colorSensor);
-		if (luz > luzUmbral*1.6){
+		luz=getColorName(colorSensor);
+		if (luz > luzUmbral){
+			//stopAllMotors();
 			stopAllTasks();
 		}
 	}

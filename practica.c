@@ -7,11 +7,11 @@
 
 // Pragma #####################################################################
 #pragma config(Sensor, S1,     touchSensor,    sensorEV3_Touch)
-#pragma config(Sensor, S2,     gyroSensor,     sensorEV3_Gyro, modeEV3Gyro_RateAndAngle)
+#pragma config(Sensor, S2,     gyroSensor,     sensorEV3_Gyro,  modeEV3Gyro_RateAndAngle)
 #pragma config(Sensor, S3,     lightSensor,    sensorEV3_Color, modeEV3Color_Ambient)
 #pragma config(Sensor, S4,     sonarSensor,    sensorEV3_Ultrasonic)
-#pragma config(Motor,  motorA,          armMotor,      tmotorEV3_Large, PIDControl, encoder)
-#pragma config(Motor,  motorB,          leftMotor,     tmotorEV3_Large, PIDControl, driveLeft, encoder)
+#pragma config(Motor,  motorA,          armMotor,      tmotorEV3_Large, PIDControl,             encoder)
+#pragma config(Motor,  motorB,          leftMotor,     tmotorEV3_Large, PIDControl, driveLeft,  encoder)
 #pragma config(Motor,  motorC,          rightMotor,    tmotorEV3_Large, PIDControl, driveRight, encoder)
 
 // Definitions ################################################################
@@ -180,7 +180,7 @@ task go_to_wall() {
 			if (currentDistance > MAX_DISTANCE) {
 				setMotorSpeed(leftMotor, FULL_SPEED);
 				setMotorSpeed(rightMotor, FULL_SPEED);
-			
+
 			// Linear distance speed
 			} else {
 				setMotorSpeed(leftMotor, currentDistance + 20);
