@@ -45,9 +45,9 @@ task escape() {
 				setMotorSpeed(rightMotor, -DEFAULT_SPEED);
 
 				resetGyro(gyroSensor);
-				repeatUntil(getGyroDegrees(gyroSensor) < -CORNING_ANGLE) {
-					setMotorSpeed(leftMotor, -DEFAULT_SPEED);
-					setMotorSpeed(rightMotor, DEFAULT_SPEED);
+				repeatUntil(getGyroDegrees(gyroSensor) > CORNING_ANGLE) {
+					setMotorSpeed(leftMotor, DEFAULT_SPEED);
+					setMotorSpeed(rightMotor, -DEFAULT_SPEED);
 				}
 				resetGyro(gyroSensor);
 
@@ -63,6 +63,7 @@ task escape() {
  */
 task light(){
 	int luz;
+	int detected;
 
 	while(true){
 		luz = getColorAmbient(colorSensor);
@@ -79,9 +80,23 @@ task light(){
 				semaphoreUnlock(sem23);
 			}
 
-			writeDebugStreamLine("LIGHT_DETECTED");
+			if(luz >= LIGHT_DETECTED) {
+				semaphoreLock(sem12);
+				detected = luz;
+				setMotorSpeed(leftMotor, 20);
+				setMotorSpeed(rightMotor, 20);
+
+				luz = getColorAmbient(colorSensor);
+
+				if(luz < detected)
+					writeDebugStreamLine("Perdina bro");
+
+				if(luz > detected)
+					writeDebugStreamLine("Toume acercando");
+		  }
 
 			if(luz >= LIGHT_FOUND) {
+				semaphoreLock(sem12);
 				writeDebugStreamLine("LIGHT_FOUND");
 			  stopAllTasks();
 			}
@@ -117,9 +132,9 @@ task follow_wall(){
 				semaphoreLock(sem34);
 					right_wall = true;
 					resetGyro(gyroSensor);
-					repeatUntil(getGyroDegrees(gyroSensor) <= -TURNING_ANGLE) {
-						setMotorSpeed(leftMotor, -DEFAULT_SPEED);
-						setMotorSpeed(rightMotor, DEFAULT_SPEED);
+					repeatUntil(getGyroDegrees(gyroSensor) >= TURNING_ANGLE) {
+						setMotorSpeed(leftMotor, DEFAULT_SPEED);
+						setMotorSpeed(rightMotor, -DEFAULT_SPEED);
 					}
 					resetGyro(gyroSensor);
 				semaphoreUnlock(sem34);
@@ -128,9 +143,9 @@ task follow_wall(){
 			if(right_wall && currentDistance > FOLLOW_DISTANCE) {
 				semaphoreLock(sem34);
 					resetGyro(gyroSensor);
-					repeatUntil(getGyroDegrees(gyroSensor) >= 5) {
-						setMotorSpeed(leftMotor, DEFAULT_SPEED + 20);
-						setMotorSpeed(rightMotor, DEFAULT_SPEED - 20);
+					repeatUntil(getGyroDegrees(gyroSensor) <= -5) {
+						setMotorSpeed(leftMotor, DEFAULT_SPEED - 20);
+						setMotorSpeed(rightMotor, DEFAULT_SPEED + 10);
 					}
 					resetGyro(gyroSensor);
 				semaphoreUnlock(sem34);
