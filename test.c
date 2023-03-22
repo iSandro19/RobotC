@@ -12,7 +12,7 @@
 // Title: Practice 1
 // Authors:
 //   - Oscar Alejandro Manteiga Seoane
-//   - Antonio Vila Lei
+//   - Antonio Vila Leis
 
 // Definitions ################################################################
 const int MAX_DISTANCE = 30;
@@ -38,7 +38,7 @@ task escape() {
 	while(true) {
 		int currentDistance = getUSDistance(sonarSensor);
 
-		if(getTouchValue(touchSensor) == 1 || currentDistance < 15) {
+		if(getTouchValue(touchSensor) == 1 || currentDistance < 5) {
 			semaphoreLock(sem12);
 			if(bDoesTaskOwnSemaphore(sem12)) {
 				setMotorSpeed(leftMotor, -DEFAULT_SPEED);
@@ -78,29 +78,11 @@ task light(){
 			if(bDoesTaskOwnSemaphore(sem23)) {
 				semaphoreUnlock(sem23);
 			}
-			/*
-			if(luz >= LIGHT_DETECTED){
-				semaphoreLock(sem23);
 
-				while(luz >= LIGHT_DETECTED) {
-					luz = getColorAmbient(colorSensor);
-
-				  setMotorSpeed(leftMotor, 0);
-				  setMotorSpeed(rightMotor, 30);
-			  }
-
-				while(luz < LIGHT_DETECTED) {
-					luz = getColorAmbient(colorSensor);
-
-					setMotorSpeed(leftMotor, 0);
-				  setMotorSpeed(rightMotor, 30);
-				}
-				semaphoreUnlock(sem23);
-			}
-			*/
+			writeDebugStreamLine("LIGHT_DETECTED");
 
 			if(luz >= LIGHT_FOUND) {
-				writeDebugStreamLine("FOUND");
+				writeDebugStreamLine("LIGHT_FOUND");
 			  stopAllTasks();
 			}
 
