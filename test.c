@@ -1,5 +1,5 @@
 #pragma config(Sensor, S1,     touchSensor,    sensorEV3_Touch)
-#pragma config(Sensor, S2,     gyroSensor,     sensorEV3_Gyro)
+#pragma config(Sensor, S2,     gyroSensor,     sensorEV3_Gyro, modeEV3Gyro_RateAndAngle)
 #pragma config(Sensor, S3,     colorSensor,    sensorEV3_Color, modeEV3Color_Ambient)
 #pragma config(Sensor, S4,     sonarSensor,    sensorEV3_Ultrasonic)
 #pragma config(Motor,  motorA,          armMotor,      tmotorEV3_Large, PIDControl, encoder)
@@ -26,7 +26,7 @@ const int CORNING_ANGLE = 90;
 const int LIGHT_FOUND = 40;
 const int LIGHT_DETECTED = 20;
 
-// Sephores// Semaphores #################################################################
+// Semaphores #################################################################
 TSemaphore sem12, sem23, sem34;
 
 // Tasks ######################################################################
